@@ -3,7 +3,7 @@
 # tcpv4tracer   Trace TCP connections.
 #               For Linux, uses BCC, eBPF. Embedded C.
 #
-# USAGE: tcpv4tracer [-h] [-v] [-p PID] [-N NETNS] 
+# USAGE: tcpv4tracer [-h] [-v] [-p PID] [-N NETNS]
 #
 # You should generally try to avoid writing long scripts that measure multiple
 # functions and walk multiple kernel structures, as they will be a burden to
@@ -27,7 +27,7 @@ parser = ap.ArgumentParser(description="Trace TCP connections",
 parser.add_argument("-t", "--timestamp", action="store_true",
                     help="include timestamp on output")
 parser.add_argument("-T", "--time", action="store_true",
-    help="include time column on output (HH:MM:SS)")
+                    help="include time column on output (HH:MM:SS)")
 parser.add_argument("-p", "--pid", default=0, type=int,
                     help="trace this PID only")
 parser.add_argument("-N", "--netns", default=0, type=int,
@@ -525,7 +525,7 @@ def print_ipv4_event(cpu, data, size):
         print("%-12s " % (verbose_types[type_str]), end="")
     else:
         print("%-2s " % (type_str), end="")
-    
+
     print("%-6d %-16s %-2d %-16s %-16s %-6d %-6d" %
           (event.pid, event.comm.decode('utf-8', 'replace'),
            event.ip,
@@ -533,7 +533,7 @@ def print_ipv4_event(cpu, data, size):
            inet_ntop(AF_INET, pack("I", event.daddr)),
            event.sport,
            event.dport), end="")
-    
+
     if args.verbose and not args.netns:
         print(" %-8d" % event.netns)
     else:
@@ -613,7 +613,7 @@ if args.verbose:
     if args.timestamp:
         print("%-14s" % ("TIME(ns)"), end="")
     print("%-12s %-6s %-16s %-2s %-16s %-16s %-6s %-7s" % ("TYPE",
-          "PID", "COMM", "IP", "SADDR", "DADDR", "SPORT", "DPORT"), end="")
+                                                           "PID", "COMM", "IP", "SADDR", "DADDR", "SPORT", "DPORT"), end="")
     if not args.netns:
         print("%-8s" % "--NETNS", end="")
     print()
@@ -624,6 +624,7 @@ else:
           ("T", "PID", "COMM", "IP", "SADDR", "DADDR", "SPORT", "DPORT"))
 
 start_ts = 0
+
 
 def inet_ntoa(addr):
     dq = ''

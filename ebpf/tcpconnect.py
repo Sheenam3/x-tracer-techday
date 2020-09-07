@@ -42,21 +42,21 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=examples)
 parser.add_argument("-t", "--timestamp", action="store_true",
-    help="include timestamp on output")
+                    help="include timestamp on output")
 parser.add_argument("-T", "--tstamp", action="store_true",
-    help="include System Timestamp on output")
+                    help="include System Timestamp on output")
 parser.add_argument("-p", "--pid",
-    help="trace this PID only")
+                    help="trace this PID only")
 parser.add_argument("-P", "--port",
-    help="comma-separated list of destination ports to trace.")
+                    help="comma-separated list of destination ports to trace.")
 parser.add_argument("-N", "--netns", default=0, type=int,
                     help="trace this Network Namespace only")
 parser.add_argument("-U", "--print-uid", action="store_true",
-    help="include UID on output")
+                    help="include UID on output")
 parser.add_argument("-u", "--uid",
-    help="trace this UID only")
+                    help="trace this UID only")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 debug = 0
 
@@ -187,7 +187,7 @@ netns_filter = ""
 # code substitutions
 if args.pid:
     bpf_text = bpf_text.replace('FILTER_PID',
-        'if (pid != %s) { return 0; }' % args.pid)
+                                'if (pid != %s) { return 0; }' % args.pid)
 if args.netns:
     netns_filter = 'if (net_ns_inum != %d) { return 0; }' % args.netns
 bpf_text = bpf_text.replace('##FILTER_NETNS##', netns_filter)
@@ -195,10 +195,10 @@ if args.port:
     dports = [int(dport) for dport in args.port.split(',')]
     dports_if = ' && '.join(['dport != %d' % ntohs(dport) for dport in dports])
     bpf_text = bpf_text.replace('FILTER_PORT',
-        'if (%s) { currsock.delete(&pid); return 0; }' % dports_if)
+                                'if (%s) { currsock.delete(&pid); return 0; }' % dports_if)
 if args.uid:
     bpf_text = bpf_text.replace('FILTER_UID',
-        'if (uid != %s) { return 0; }' % args.uid)
+                                'if (uid != %s) { return 0; }' % args.uid)
 
 bpf_text = bpf_text.replace('FILTER_PID', '')
 bpf_text = bpf_text.replace('FILTER_PORT', '')
@@ -210,11 +210,13 @@ if debug or args.ebpf:
         exit()
 
 # process event
+
+
 def print_ipv4_event(cpu, data, size):
     event = b["ipv4_events"].event(data)
     global start_ts
     if args.tstamp:
-	print("%-15s " % strftime("%H:%M:%S"), end="")
+        print("%-15s " % strftime("%H:%M:%S"), end="")
     if args.timestamp:
         if start_ts == 0:
             start_ts = event.ts_us
@@ -223,18 +225,19 @@ def print_ipv4_event(cpu, data, size):
         printb(b"%-6d" % event.uid, nl="")
     if args.netns:
         print("%-16d" % event.netns, end="")
-    
 
     printb(b"%-10d %-12.12s %-12d %-16s %-16s %-10d" % (event.pid,
-        event.task, event.ip,
-        inet_ntop(AF_INET, pack("I", event.saddr)).encode(),
-        inet_ntop(AF_INET, pack("I", event.daddr)).encode(), event.dport))
-    
+                                                        event.task, event.ip,
+                                                        inet_ntop(AF_INET, pack(
+                                                            "I", event.saddr)).encode(),
+                                                        inet_ntop(AF_INET, pack("I", event.daddr)).encode(), event.dport))
+
+
 def print_ipv6_event(cpu, data, size):
     event = b["ipv6_events"].event(data)
     global start_ts
     if args.tstamp:
-	print("%-8s " % strftime("%H:%M:%S"), end="")
+        print("%-8s " % strftime("%H:%M:%S"), end="")
     if args.timestamp:
         if start_ts == 0:
             start_ts = event.ts_us
@@ -243,13 +246,14 @@ def print_ipv6_event(cpu, data, size):
         printb(b"%-6d" % event.uid, nl="")
     if args.netns:
         print("%-16d" % event.netns, end="")
-    
 
     printb(b"%-10d %-12.12s %-12d %-16s %-16s %-10d" % (event.pid,
-        event.task, event.ip,
-        inet_ntop(AF_INET6, event.saddr).encode(), inet_ntop(AF_INET6, event.daddr).encode(),
-        event.dport))
-    
+                                                        event.task, event.ip,
+                                                        inet_ntop(AF_INET6, event.saddr).encode(), inet_ntop(
+                                                            AF_INET6, event.daddr).encode(),
+                                                        event.dport))
+
+
 # initialize BPF
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_v4_connect", fn_name="trace_connect_entry")
@@ -268,7 +272,7 @@ if args.netns:
     print("%-16s" % ("NETNS"), end="")
 
 print("%-10s %-12s %-12s %-16s %-16s %-10s" % ("PID", "COMM", "IP", "SADDR",
-    "DADDR", "DPORT"))
+                                               "DADDR", "DPORT"))
 
 
 start_ts = 0

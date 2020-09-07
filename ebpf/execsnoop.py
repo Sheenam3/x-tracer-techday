@@ -17,13 +17,13 @@
 # 07-Feb-2016   Brendan Gregg   Created this.
 
 # Added namespace option to filter only PIDs that belong to the specified namespace id: 19 May 2020
-#root@node:~# ./execsnoop -N 4026532546
-#NETNS           PCOMM            PID    PPID   RET ARGS
-#4026532546      ls               8391   1436     0 /bin/ls
-#4026532546      ps               8479   1436     0 /bin/ps ax
-#4026532546      iperf3           8789   1436     0 /usr/bin/iperf3 -c -p 6001 -t 2
-#4026532546      iperf3           9019   1436     0 /usr/bin/iperf3 -c localhost -p 6001 -t 2
-#4026532546      ip               24436  1586     0 /sbin/ip -o -4 addr show dev eth0 scope global
+# root@node:~# ./execsnoop -N 4026532546
+# NETNS           PCOMM            PID    PPID   RET ARGS
+# 4026532546      ls               8391   1436     0 /bin/ls
+# 4026532546      ps               8479   1436     0 /bin/ps ax
+# 4026532546      iperf3           8789   1436     0 /usr/bin/iperf3 -c -p 6001 -t 2
+# 4026532546      iperf3           9019   1436     0 /usr/bin/iperf3 -c localhost -p 6001 -t 2
+# 4026532546      ip               24436  1586     0 /sbin/ip -o -4 addr show dev eth0 scope global
 
 from __future__ import print_function
 from bcc import BPF
@@ -49,26 +49,26 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=examples)
 parser.add_argument("-t", "--timestamp", action="store_true",
-    help="include timestamp on output")
+                    help="include timestamp on output")
 parser.add_argument("-T", "--time", action="store_true",
-    help="include time column on output (HH:MM:SS)")
+                    help="include time column on output (HH:MM:SS)")
 parser.add_argument("-N", "--netns", default=0, type=int,
                     help="trace this Network Namespace only")
 parser.add_argument("-x", "--fails", action="store_true",
-    help="include failed exec()s")
+                    help="include failed exec()s")
 parser.add_argument("-q", "--quote", action="store_true",
-    help="Add quotemarks (\") around arguments."
-    )
+                    help="Add quotemarks (\") around arguments."
+                    )
 parser.add_argument("-n", "--name",
-    type=ArgString,
-    help="only print commands matching this name (regex), any arg")
+                    type=ArgString,
+                    help="only print commands matching this name (regex), any arg")
 parser.add_argument("-l", "--line",
-    type=ArgString,
-    help="only print commands where arg contains this line (regex)")
+                    type=ArgString,
+                    help="only print commands where arg contains this line (regex)")
 parser.add_argument("--max-args", default="20",
-    help="maximum number of arguments parsed and displayed, defaults to 20")
+                    help="maximum number of arguments parsed and displayed, defaults to 20")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 
 # define BPF program
@@ -196,7 +196,7 @@ int do_ret_sys_execve(struct pt_regs *ctx)
 
 if args.netns:
     bpf_text = bpf_text.replace('FILTER_NETNS',
-	'if (net_ns_inum != %d) { return 0; }' % args.netns)
+                                'if (net_ns_inum != %d) { return 0; }' % args.netns)
 else:
     bpf_text = bpf_text.replace('FILTER_NETNS', '')
 
@@ -220,9 +220,11 @@ if args.netns:
     print("%-16s" % ("NETNS"), end="")
 print("%-16s %-6s %-6s %3s %s" % ("PCOMM", "PID", "PPID", "RET", "ARGS"))
 
+
 class EventType(object):
     EVENT_ARG = 0
     EVENT_RET = 1
+
 
 start_ts = time.time()
 argv = defaultdict(list)
@@ -231,6 +233,8 @@ argv = defaultdict(list)
 # before we get a chance to read the PPID.
 # This is a fallback for when fetching the PPID from task->real_parent->tgip
 # returns 0, which happens in some kernel versions.
+
+
 def get_ppid(pid):
     try:
         with open("/proc/%d/status" % pid) as status:
@@ -242,16 +246,17 @@ def get_ppid(pid):
     return 0
 
 # process event
+
+
 def print_event(cpu, data, size):
     event = b["events"].event(data)
     skip = False
-    
 
     if event.type == EventType.EVENT_ARG:
         argv[event.pid].append(event.argv)
-       
+
     elif event.type == EventType.EVENT_RET:
-        
+
         if event.retval != 0 and not args.fails:
             skip = True
         if args.name and not re.search(bytes(args.name), event.comm):
@@ -266,17 +271,17 @@ def print_event(cpu, data, size):
             ]
 
         if not skip:
-	    if args.time:
+            if args.time:
                 printb(b"%-9s" % strftime("%H:%M:%S").encode('ascii'), nl="")
             if args.timestamp:
                 printb(b"%-8.3f" % (time.time() - start_ts), nl="")
             if args.netns:
-		printb(b"%-16d" % event.netns, nl="")
+                printb(b"%-16d" % event.netns, nl="")
             ppid = event.ppid if event.ppid > 0 else get_ppid(event.pid)
             ppid = b"%d" % ppid if ppid > 0 else b"?"
             argv_text = b' '.join(argv[event.pid]).replace(b'\n', b'\\n')
             printb(b"%-16s %-6d %-6s %3d %s" % (event.comm, event.pid,
-                   ppid, event.retval, argv_text))
+                                                ppid, event.retval, argv_text))
         try:
             del(argv[event.pid])
         except Exception:

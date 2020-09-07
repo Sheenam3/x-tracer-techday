@@ -13,7 +13,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License")
 #
 # 09-Sep-2015   Brendan Gregg   Created this.
-# 21-May-2020   Sheenam Pathak        Modified to use without curse, displaying terminal output 
+# 21-May-2020   Sheenam Pathak        Modified to use without curse, displaying terminal output
 
 from __future__ import print_function
 from bcc import BPF
@@ -26,11 +26,15 @@ from sys import argv
 from collections import defaultdict
 
 # signal handler
+
+
 def signal_ignore(signal, frame):
     print()
 
 # Function to gather data from /proc/meminfo
 # return dictionary for quicker lookup of both values
+
+
 def get_meminfo():
     result = dict()
 
@@ -46,13 +50,13 @@ parser = argparse.ArgumentParser(
     description="Count cache kernel function calls",
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-T", "--timestamp", action="store_true",
-    help="include timestamp on output")
+                    help="include timestamp on output")
 parser.add_argument("interval", nargs="?", default=1,
-    help="output interval, in seconds")
+                    help="output interval, in seconds")
 parser.add_argument("count", nargs="?", default=-1,
-    help="number of outputs")
+                    help="number of outputs")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 count = int(args.count)
 tstamp = args.timestamp
@@ -88,75 +92,71 @@ int do_count(struct pt_regs *ctx) {
 
 
 def get_processes_stats(bpf):
-        counts = bpf.get_table("counts")
-	stats = defaultdict(lambda: defaultdict(int))
-        
-	for k, v in counts.items():
-                  
-	   stats["%d-%d-%s" % (k.pid, k.uid, k.comm.decode('utf-8', 'replace'))][k.ip] = v.value
-	stats_list = []
+    counts = bpf.get_table("counts")
+    stats = defaultdict(lambda: defaultdict(int))
 
-	for pid, count in sorted(stats.items(), key=lambda stat: stat[0]):
-	    rtaccess = 0
-	    wtaccess = 0
-	    mpa = 0
-	    mbd = 0
-	    apcl = 0
-	    apd = 0
-	    access = 0
-	    misses = 0
-	    rhits = 0
-	    whits = 0
-	    
-	    for k, v in count.items():
-		if re.match(b'mark_page_accessed', bpf.ksym(k)) is not None:
-		    mpa = max(0, v)
-		if re.match(b'mark_buffer_dirty', bpf.ksym(k)) is not None:
-		    mbd = max(0, v)
+    for k, v in counts.items():
 
-		if re.match(b'add_to_page_cache_lru', bpf.ksym(k)) is not None:
-		    apcl = max(0, v)
+        stats["%d-%d-%s" %
+              (k.pid, k.uid, k.comm.decode('utf-8', 'replace'))][k.ip] = v.value
+    stats_list = []
 
-		if re.match(b'account_page_dirtied', bpf.ksym(k)) is not None:
-		    apd = max(0, v)
-		  # access = total cache access incl. reads(mpa) and writes(mbd)
-		    # misses = total of add to lru which we do when we write(mbd)
-		    # and also the mark the page dirty(same as mbd)
-		access = (mpa + mbd)
-		misses = (apcl + apd)
+    for pid, count in sorted(stats.items(), key=lambda stat: stat[0]):
+        rtaccess = 0
+        wtaccess = 0
+        mpa = 0
+        mbd = 0
+        apcl = 0
+        apd = 0
+        access = 0
+        misses = 0
+        rhits = 0
+        whits = 0
 
-		    # rtaccess is the read hit % during the sample period.
-		    # wtaccess is the write hit % during the smaple period.
-		if mpa > 0:
-		    rtaccess = float(mpa) / (access + misses)
-		if apcl > 0:
-		    wtaccess = float(apcl) / (access + misses)
+        for k, v in count.items():
+            if re.match(b'mark_page_accessed', bpf.ksym(k)) is not None:
+                mpa = max(0, v)
+            if re.match(b'mark_buffer_dirty', bpf.ksym(k)) is not None:
+                mbd = max(0, v)
 
-		if wtaccess != 0:
-		    whits = 100 * wtaccess
-		if rtaccess != 0:
-		    rhits = 100 * rtaccess
-	    _pid, uid, comm = pid.split('-', 2)
-	    stats_list.append(
+            if re.match(b'add_to_page_cache_lru', bpf.ksym(k)) is not None:
+                apcl = max(0, v)
+
+            if re.match(b'account_page_dirtied', bpf.ksym(k)) is not None:
+                apd = max(0, v)
+              # access = total cache access incl. reads(mpa) and writes(mbd)
+                # misses = total of add to lru which we do when we write(mbd)
+                # and also the mark the page dirty(same as mbd)
+            access = (mpa + mbd)
+            misses = (apcl + apd)
+
+            # rtaccess is the read hit % during the sample period.
+            # wtaccess is the write hit % during the smaple period.
+            if mpa > 0:
+                rtaccess = float(mpa) / (access + misses)
+            if apcl > 0:
+                wtaccess = float(apcl) / (access + misses)
+
+            if wtaccess != 0:
+                whits = 100 * wtaccess
+            if rtaccess != 0:
+                rhits = 100 * rtaccess
+        _pid, uid, comm = pid.split('-', 2)
+        stats_list.append(
             (int(_pid), uid, comm,
-            access, misses, mbd,
-            rhits, whits))
-        stats_list = sorted(
+             access, misses, mbd,
+             rhits, whits))
+    stats_list = sorted(
         stats_list, key=lambda stat: stat[3])
 
-	counts.clear()
-	return stats_list
+    counts.clear()
+    return stats_list
 
 
-
-
-
-#if debug or args.ebpf:
+# if debug or args.ebpf:
 #    print(bpf_text)
 #    if args.ebpf:
 #        exit()
-
-
 # load BPF program
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="add_to_page_cache_lru", fn_name="do_count")
@@ -169,7 +169,7 @@ b.attach_kprobe(event="mark_buffer_dirty", fn_name="do_count")
 if tstamp:
     print("%-8s " % "-TIME-", end="")
 print("%6s %16s %16s %8s %8s %10s %14s %14s" %
-     ("PID","UID","CMD","HITS", "MISSES", "DIRTIES", "READ_HIT%", "WRITE_HIT%"))
+      ("PID", "UID", "CMD", "HITS", "MISSES", "DIRTIES", "READ_HIT%", "WRITE_HIT%"))
 
 
 loop = 0
@@ -192,24 +192,23 @@ while 1:
     cached = int(mem["Cached"]) / 1024
     buff = int(mem["Buffers"]) / 1024
 
-
     process_stats = get_processes_stats(b)
     for i, stat in enumerate(process_stats):
-		    uid = int(stat[1])
-		    try: 
-		        username = pwd.getpwuid(uid)[0]
-		    except KeyError:
-		        # `pwd` throws a KeyError if the user cannot be found. This can
-		        # happen e.g. when the process is running in a cgroup that has
-		        # different users from the host.
-		        username = 'UNKNOWN({})'.format(uid)
-		    print("%6s %16s %16s %8s %8s %8s %12.0f%% %10.0f%%" %
-		    (stat[0], username, stat[2], stat[3], stat[4], stat[5], stat[6], stat[7]))
+        uid = int(stat[1])
+        try:
+            username = pwd.getpwuid(uid)[0]
+        except KeyError:
+            # `pwd` throws a KeyError if the user cannot be found. This can
+            # happen e.g. when the process is running in a cgroup that has
+            # different users from the host.
+            username = 'UNKNOWN({})'.format(uid)
+        print("%6s %16s %16s %8s %8s %8s %12.0f%% %10.0f%%" %
+              (stat[0], username, stat[2], stat[3], stat[4], stat[5], stat[6], stat[7]))
 
-	#if tstamp:
-	 #   print("%-8s--- " % strftime("%H:%M:%S"), end="")
-	#print("%8d %8d %8d %8d %8d %8d %12.0f %10.0f" %
-	#        (pid, uid, cmd, hits, misses, dirties, whits, rhits))
+        # if tstamp:
+        #   print("%-8s--- " % strftime("%H:%M:%S"), end="")
+        # print("%8d %8d %8d %8d %8d %8d %12.0f %10.0f" %
+        #        (pid, uid, cmd, hits, misses, dirties, whits, rhits))
 
     rtaccess = wtaccess = mpa = mbd = apcl = apd = access = misses = rhits = whits = 0
 

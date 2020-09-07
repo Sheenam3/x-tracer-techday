@@ -31,16 +31,16 @@ parser = argparse.ArgumentParser(
 parser.add_argument("-N", "--netns", default=0, type=int,
                     help="trace this Network Namespace only")
 parser.add_argument("-Q", "--queue", action="store_true",
-    help="include OS queued time")
+                    help="include OS queued time")
 parser.add_argument("-T", "--time", action="store_true",
-    help="include time column on output (HH:MM:SS)")
+                    help="include time column on output (HH:MM:SS)")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 debug = 0
 
 # define BPF program
-bpf_text="""
+bpf_text = """
 #include <uapi/linux/ptrace.h>
 #include <linux/blkdev.h>
 #include <linux/sched.h>
@@ -176,7 +176,7 @@ int trace_req_completion(struct pt_regs *ctx, struct request *req)
 """
 if args.netns:
     bpf_text = bpf_text.replace('FILTER_NETNS',
-	'if (net_ns_inum != %d) { return 0; }' % args.netns)
+                                'if (net_ns_inum != %d) { return 0; }' % args.netns)
 bpf_text = bpf_text.replace('FILTER_NETNS', '')
 
 if args.queue:
@@ -195,13 +195,13 @@ if BPF.get_kprobe_functions(b'blk_start_request'):
     b.attach_kprobe(event="blk_start_request", fn_name="trace_req_start")
 b.attach_kprobe(event="blk_mq_start_request", fn_name="trace_req_start")
 b.attach_kprobe(event="blk_account_io_completion",
-    fn_name="trace_req_completion")
+                fn_name="trace_req_completion")
 
 # header
 if args.time:
     print("%-9s" % ("TIME"), end="")
 print("%-11s %-14s %-6s %-7s %-1s %-10s %-7s" % ("TIME(s)", "COMM", "PID",
-    "DISK", "T", "SECTOR", "BYTES"), end="")
+                                                 "DISK", "T", "SECTOR", "BYTES"), end="")
 if args.queue:
     print("%7s " % ("QUE(ms)"), end="")
 if args.netns:
@@ -214,6 +214,8 @@ prev_ts = 0
 delta = 0
 
 # process event
+
+
 def print_event(cpu, data, size):
     event = b["events"].event(data)
 
@@ -227,20 +229,21 @@ def print_event(cpu, data, size):
         rwflg = "R"
 
     delta = float(event.ts) - start_ts
-    #print(event.pid)
+    # print(event.pid)
     if event.pid != 0:
         if args.time:
-        	printb(b"%-9s" % strftime("%H:%M:%S").encode('ascii'), nl="")
-      	print("%-11.6f %-14.14s %-6s %-7s %-1s %-10s %-7s" % (
-        	delta / 1000000, event.name.decode('utf-8', 'replace'), event.pid,
-        	event.disk_name.decode('utf-8', 'replace'), rwflg, event.sector,
-        	event.len), end="")
-    	if args.queue:
-        	print("%7.2f " % (float(event.qdelta) / 1000000), end="")
-    	if args.netns:
-		print("%-8d" % event.netns, end="")    
-   	
-    	print("%7.2f" % (float(event.delta) / 1000000))
+            printb(b"%-9s" % strftime("%H:%M:%S").encode('ascii'), nl="")
+        print("%-11.6f %-14.14s %-6s %-7s %-1s %-10s %-7s" % (
+            delta / 1000000, event.name.decode('utf-8', 'replace'), event.pid,
+            event.disk_name.decode('utf-8', 'replace'), rwflg, event.sector,
+            event.len), end="")
+        if args.queue:
+            print("%7.2f " % (float(event.qdelta) / 1000000), end="")
+        if args.netns:
+            print("%-8d" % event.netns, end="")
+
+        print("%7.2f" % (float(event.delta) / 1000000))
+
 
 # loop with callback to print_event
 b["events"].open_perf_buffer(print_event, page_cnt=64)

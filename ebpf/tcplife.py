@@ -42,30 +42,30 @@ examples = """examples:
 """
 
 
-#namespace option added 
+# namespace option added
 
 parser = argparse.ArgumentParser(
     description="Trace the lifespan of TCP sessions and summarize",
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=examples)
 parser.add_argument("-T", "--time", action="store_true",
-    help="include time column on output (HH:MM:SS)")
+                    help="include time column on output (HH:MM:SS)")
 parser.add_argument("-t", "--timestamp", action="store_true",
-    help="include timestamp on output (seconds)")
+                    help="include timestamp on output (seconds)")
 parser.add_argument("-w", "--wide", action="store_true",
-    help="wide column output (fits IPv6 addresses)")
+                    help="wide column output (fits IPv6 addresses)")
 parser.add_argument("-N", "--netns", default=0, type=int,
                     help="trace this Network Namespace only")
 parser.add_argument("-s", "--csv", action="store_true",
-    help="comma separated values output")
+                    help="comma separated values output")
 parser.add_argument("-p", "--pid",
-    help="trace this PID only")
+                    help="trace this PID only")
 parser.add_argument("-L", "--localport",
-    help="comma-separated list of local ports to trace.")
+                    help="comma-separated list of local ports to trace.")
 parser.add_argument("-D", "--remoteport",
-    help="comma-separated list of remote ports to trace.")
+                    help="comma-separated list of remote ports to trace.")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 debug = 0
 
@@ -388,22 +388,22 @@ else:
 # code substitutions
 if args.pid:
     bpf_text = bpf_text.replace('FILTER_PID',
-        'if (pid != %s) { return 0; }' % args.pid)
+                                'if (pid != %s) { return 0; }' % args.pid)
 if args.netns:
     bpf_text = bpf_text.replace('FILTER_NETNS',
-        'if (net_ns_inum != %d) { return 0; }' % args.netns)
+                                'if (net_ns_inum != %d) { return 0; }' % args.netns)
 if args.remoteport:
     dports = [int(dport) for dport in args.remoteport.split(',')]
     dports_if = ' && '.join(['dport != %d' % dport for dport in dports])
     bpf_text = bpf_text.replace('FILTER_DPORT',
-        'if (%s) { birth.delete(&sk); return 0; }' % dports_if)
+                                'if (%s) { birth.delete(&sk); return 0; }' % dports_if)
 if args.localport:
     lports = [int(lport) for lport in args.localport.split(',')]
     lports_if = ' && '.join(['lport != %d' % lport for lport in lports])
     bpf_text = bpf_text.replace('FILTER_LPORT',
-        'if (%s) { birth.delete(&sk); return 0; }' % lports_if)
+                                'if (%s) { birth.delete(&sk); return 0; }' % lports_if)
 bpf_text = bpf_text.replace('FILTER_PID', '')
-bpf_text = bpf_text.replace('FILTER_NETNS','')
+bpf_text = bpf_text.replace('FILTER_NETNS', '')
 bpf_text = bpf_text.replace('FILTER_DPORT', '')
 bpf_text = bpf_text.replace('FILTER_LPORT', '')
 
@@ -430,6 +430,8 @@ if args.csv:
     format_string = "%d,%s,%s,%s,%s,%s,%d,%d,%d,%.2f"
 
 # process event
+
+
 def print_ipv4_event(cpu, data, size):
     event = b["ipv4_events"].event(data)
     global start_ts
@@ -449,10 +451,13 @@ def print_ipv4_event(cpu, data, size):
     if args.netns:
         print("%-16d" % event.netns, end="")
     print(format_string % (event.pid, event.task.decode('utf-8', 'replace'),
-        "4" if args.wide or args.csv else "",
-        inet_ntop(AF_INET, pack("I", event.saddr)), event.ports >> 32,
-        inet_ntop(AF_INET, pack("I", event.daddr)), event.ports & 0xffffffff,
-        event.tx_b / 1024, event.rx_b / 1024, float(event.span_us) / 1000))
+                           "4" if args.wide or args.csv else "",
+                           inet_ntop(AF_INET, pack("I", event.saddr)
+                                     ), event.ports >> 32,
+                           inet_ntop(AF_INET, pack("I", event.daddr)
+                                     ), event.ports & 0xffffffff,
+                           event.tx_b / 1024, event.rx_b / 1024, float(event.span_us) / 1000))
+
 
 def print_ipv6_event(cpu, data, size):
     event = b["ipv6_events"].event(data)
@@ -473,10 +478,12 @@ def print_ipv6_event(cpu, data, size):
     if args.netns:
         print("%-16d" % event.netns, end="")
     print(format_string % (event.pid, event.task.decode('utf-8', 'replace'),
-        "6" if args.wide or args.csv else "",
-        inet_ntop(AF_INET6, event.saddr), event.ports >> 32,
-        inet_ntop(AF_INET6, event.daddr), event.ports & 0xffffffff,
-        event.tx_b / 1024, event.rx_b / 1024, float(event.span_us) / 1000))
+                           "6" if args.wide or args.csv else "",
+                           inet_ntop(AF_INET6, event.saddr), event.ports >> 32,
+                           inet_ntop(
+                               AF_INET6, event.daddr), event.ports & 0xffffffff,
+                           event.tx_b / 1024, event.rx_b / 1024, float(event.span_us) / 1000))
+
 
 # initialize BPF
 b = BPF(text=bpf_text)
@@ -495,8 +502,8 @@ if args.timestamp:
 if args.netns:
     print("%-16s" % ("NETNS"), end="")
 print(header_string % ("PID", "COMM",
-    "IP" if args.wide or args.csv else "", "LADDR",
-    "LPORT", "RADDR", "RPORT", "TX_KB", "RX_KB", "MS"))
+                       "IP" if args.wide or args.csv else "", "LADDR",
+                       "LPORT", "RADDR", "RPORT", "TX_KB", "RX_KB", "MS"))
 
 start_ts = 0
 

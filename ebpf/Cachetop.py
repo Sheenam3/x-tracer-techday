@@ -13,8 +13,8 @@
 # Licensed under the Apache License, Version 2.0 (the "License")
 #
 # 09-Sep-2015   Brendan Gregg   Created this.
-# 21-May-2020   Sheenam Pathak        Modified to use without curse, displaying terminal output 
-#Added namespace tracing for containers
+# 21-May-2020   Sheenam Pathak        Modified to use without curse, displaying terminal output
+# Added namespace tracing for containers
 
 from __future__ import print_function
 from bcc import BPF
@@ -29,11 +29,15 @@ from collections import defaultdict
 import subprocess
 import sys
 # signal handler
+
+
 def signal_ignore(signal, frame):
     print()
 
 # Function to gather data from /proc/meminfo
 # return dictionary for quicker lookup of both values
+
+
 def get_meminfo():
     result = dict()
 
@@ -49,17 +53,17 @@ parser = argparse.ArgumentParser(
     description="Count cache kernel function calls",
     formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("-t", "--timestamp", action="store_true",
-    help="include timestamp on output")
+                    help="include timestamp on output")
 parser.add_argument("-T", "--time", action="store_true",
-    help="include time column on output (HH:MM:SS)")
+                    help="include time column on output (HH:MM:SS)")
 parser.add_argument("-N", "--netns", default=0, type=int,
                     help="trace this Network Namespace only")
 parser.add_argument("interval", nargs="?", default=1,
-    help="output interval, in seconds")
+                    help="output interval, in seconds")
 parser.add_argument("count", nargs="?", default=-1,
-    help="number of outputs")
+                    help="number of outputs")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 count = int(args.count)
 tstamp = args.timestamp
@@ -113,69 +117,70 @@ int do_count(struct pt_regs *ctx) {
 
 
 def get_processes_stats(bpf):
-	counts = bpf.get_table("counts")
-	stats = defaultdict(lambda: defaultdict(int))
-	for k, v in counts.items():
-		stats["%d|%d|%s|%d" % (k.pid, k.uid, k.comm.decode('utf-8', 'replace'),k.netns)][k.ip] = v.value
-	stats_list = []
+    counts = bpf.get_table("counts")
+    stats = defaultdict(lambda: defaultdict(int))
+    for k, v in counts.items():
+        stats["%d|%d|%s|%d" % (k.pid, k.uid, k.comm.decode(
+            'utf-8', 'replace'), k.netns)][k.ip] = v.value
+    stats_list = []
 
-	for pid, count in sorted(stats.items(), key=lambda stat: stat[0]):
-		rtaccess = 0
-		wtaccess = 0
-		mpa = 0
-		mbd = 0
-		apcl = 0
-		apd = 0
-		access = 0
-		misses = 0
-		rhits = 0
-		whits = 0
+    for pid, count in sorted(stats.items(), key=lambda stat: stat[0]):
+        rtaccess = 0
+        wtaccess = 0
+        mpa = 0
+        mbd = 0
+        apcl = 0
+        apd = 0
+        access = 0
+        misses = 0
+        rhits = 0
+        whits = 0
 
-		for k, v in count.items():
-		    if re.match(b'mark_page_accessed', b.ksym(k)) is not None:
-		        mpa = max(0, v)
-		    if re.match(b'mark_buffer_dirty', b.ksym(k)) is not None:
-		        mbd = max(0, v)
+        for k, v in count.items():
+            if re.match(b'mark_page_accessed', b.ksym(k)) is not None:
+                mpa = max(0, v)
+            if re.match(b'mark_buffer_dirty', b.ksym(k)) is not None:
+                mbd = max(0, v)
 
-		    if re.match(b'add_to_page_cache_lru', b.ksym(k)) is not None:
-		        apcl = max(0, v)
+            if re.match(b'add_to_page_cache_lru', b.ksym(k)) is not None:
+                apcl = max(0, v)
 
-		    if re.match(b'account_page_dirtied', b.ksym(k)) is not None:
-		        apd = max(0, v)
-		  # access = total cache access incl. reads(mpa) and writes(mbd)
-		    # misses = total of add to lru which we do when we write(mbd)
-		    # and also the mark the page dirty(same as mbd)
-		    access = (mpa + mbd)
-		    misses = (apcl + apd)
+            if re.match(b'account_page_dirtied', b.ksym(k)) is not None:
+                apd = max(0, v)
+          # access = total cache access incl. reads(mpa) and writes(mbd)
+            # misses = total of add to lru which we do when we write(mbd)
+            # and also the mark the page dirty(same as mbd)
+            access = (mpa + mbd)
+            misses = (apcl + apd)
 
-		    # rtaccess is the read hit % during the sample period.
-		    # wtaccess is the write hit % during the smaple period.
-		    if mpa > 0:
-		        rtaccess = float(mpa) / (access + misses)
-		    if apcl > 0:
-		        wtaccess = float(apcl) / (access + misses)
+            # rtaccess is the read hit % during the sample period.
+            # wtaccess is the write hit % during the smaple period.
+            if mpa > 0:
+                rtaccess = float(mpa) / (access + misses)
+            if apcl > 0:
+                wtaccess = float(apcl) / (access + misses)
 
-		    if wtaccess != 0:
-		        whits = 100 * wtaccess
-		    if rtaccess != 0:
-		        rhits = 100 * rtaccess
+            if wtaccess != 0:
+                whits = 100 * wtaccess
+            if rtaccess != 0:
+                rhits = 100 * rtaccess
 
-		_pid, uid, comm, netns = pid.split('|', 3)
-		stats_list.append(
-		(int(_pid), uid, comm, netns,
-		access, misses, mbd,
-		rhits, whits))
-	stats_list = sorted(
-	stats_list, key=lambda stat: stat[3])
+        _pid, uid, comm, netns = pid.split('|', 3)
+        stats_list.append(
+            (int(_pid), uid, comm, netns,
+             access, misses, mbd,
+             rhits, whits))
+    stats_list = sorted(
+        stats_list, key=lambda stat: stat[3])
 
-	counts.clear()
-	return stats_list
+    counts.clear()
+    return stats_list
 
 
-#code substitutions
+# code substitutions
 if args.netns:
     bpf_text = bpf_text.replace('FILTER_NETNS',
-	'if (net_ns_inum != %d) { return 0; }' % args.netns)
+                                'if (net_ns_inum != %d) { return 0; }' % args.netns)
 else:
     bpf_text = bpf_text.replace('FILTER_NETNS', '')
 if args.ebpf:
@@ -195,7 +200,7 @@ b.attach_kprobe(event="mark_buffer_dirty", fn_name="do_count")
 if args.time:
     print("%-9s" % ("SYS_TIME"), end="")
 print("%6s %16s %16s %8s %8s %10s %14s %14s %5s" %
-     ("PID","UID","CMD", "NETNS", "HITS", "MISSES", "DIRTIES", "READ_HIT%", "WRITE_HIT%"))
+      ("PID", "UID", "CMD", "NETNS", "HITS", "MISSES", "DIRTIES", "READ_HIT%", "WRITE_HIT%"))
 
 
 loop = 0
@@ -213,7 +218,7 @@ while 1:
         # as cleanup can take many seconds, trap Ctrl-C:
         signal.signal(signal.SIGINT, signal_ignore)
 
-#def print_event(cpu,data,size):
+# def print_event(cpu,data,size):
 #event = b["events"].event(data)
 # Get memory info
     mem = get_meminfo()
@@ -221,39 +226,39 @@ while 1:
     buff = int(mem["Buffers"]) / 1024
     process_stats = get_processes_stats(b)
     for i, stat in enumerate(process_stats):
-       	uid = int(stat[1])
-	try: 
-	    username = pwd.getpwuid(uid)[0]
-	except KeyError:
-			        # `pwd` throws a KeyError if the user cannot be found. This can
-			        # happen e.g. when the process is running in a cgroup that has
-			        # different users from the host.
-	    username = 'UNKNOWN({})'.format(uid)
-		#        if args.netns:
-		#            strpid = str(stat[0])
-		#            
-		#	    output = subprocess.check_output("ls /proc/" + strpid + "/ns/net -al", shell=True)
-		#	    k = output.split('[', 2)
-		#            v = k[1].split(']')
-		#            list =''.join(sys.argv[1:])
-		#	    ns = list.split('N')
-		#            if v[0] == ns[1]:
-		#	       print("%6s %16s %16s %8s %8s %8s %12.0f%% %10.0f%%" %
-		#               (stat[0], username, stat[2], stat[3], stat[4], stat[5], stat[6], stat[7])) 	
-		#	    #printb(b"%-16d" % event.netns, nl="")
-		#        else:
+        uid = int(stat[1])
+        try:
+            username = pwd.getpwuid(uid)[0]
+        except KeyError:
+            # `pwd` throws a KeyError if the user cannot be found. This can
+            # happen e.g. when the process is running in a cgroup that has
+            # different users from the host.
+            username = 'UNKNOWN({})'.format(uid)
+        #        if args.netns:
+        #            strpid = str(stat[0])
+        #
+        #	    output = subprocess.check_output("ls /proc/" + strpid + "/ns/net -al", shell=True)
+        #	    k = output.split('[', 2)
+        #            v = k[1].split(']')
+        #            list =''.join(sys.argv[1:])
+        #	    ns = list.split('N')
+        #            if v[0] == ns[1]:
+        #	       print("%6s %16s %16s %8s %8s %8s %12.0f%% %10.0f%%" %
+        #               (stat[0], username, stat[2], stat[3], stat[4], stat[5], stat[6], stat[7]))
+        #	    #printb(b"%-16d" % event.netns, nl="")
+        #        else:
         if args.time:
-        	printb(b"%-9s" % strftime("%H:%M:%S").encode('ascii'), nl="")
-       	print("%6s %16s %16s %8s %8s %8s %8s %12.0f%% %10.0f%%" %
-	    (stat[0], username, stat[2], stat[3], stat[4], stat[5], stat[6], stat[7], stat[8]))
+            printb(b"%-9s" % strftime("%H:%M:%S").encode('ascii'), nl="")
+        print("%6s %16s %16s %8s %8s %8s %8s %12.0f%% %10.0f%%" %
+              (stat[0], username, stat[2], stat[3], stat[4], stat[5], stat[6], stat[7], stat[8]))
 
-		#if tstamp:
-		 #   print("%-8s--- " % strftime("%H:%M:%S"), end="")
-		#print("%8d %8d %8d %8d %8d %8d %12.0f %10.0f" %
-		#        (pid, uid, cmd, hits, misses, dirties, whits, rhits))
+        # if tstamp:
+        #   print("%-8s--- " % strftime("%H:%M:%S"), end="")
+        # print("%8d %8d %8d %8d %8d %8d %12.0f %10.0f" %
+        #        (pid, uid, cmd, hits, misses, dirties, whits, rhits))
 
 
 rtaccess = wtaccess = mpa = mbd = apcl = apd = access = misses = rhits = whits = 0
 if exiting:
-	print("Detaching...")
-	exit()
+    print("Detaching...")
+    exit()

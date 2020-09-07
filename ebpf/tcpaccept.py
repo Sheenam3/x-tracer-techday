@@ -16,7 +16,7 @@
 # 14-Feb-2016      "      "     Switch to bpf_perf_output.
 
 
-#added filter Namespace option
+# added filter Namespace option
 from __future__ import print_function
 from bcc import BPF
 from socket import inet_ntop, AF_INET, AF_INET6
@@ -39,17 +39,17 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter,
     epilog=examples)
 parser.add_argument("-T", "--time", action="store_true",
-    help="include time column on output (HH:MM:SS)")
+                    help="include time column on output (HH:MM:SS)")
 parser.add_argument("-t", "--timestamp", action="store_true",
-    help="include timestamp on output")
+                    help="include timestamp on output")
 parser.add_argument("-p", "--pid",
-    help="trace this PID only")
+                    help="trace this PID only")
 parser.add_argument("-N", "--netns", default=0, type=int,
                     help="trace this Network Namespace only")
 parser.add_argument("-P", "--port",
-    help="comma-separated list of local ports to trace")
+                    help="comma-separated list of local ports to trace")
 parser.add_argument("--ebpf", action="store_true",
-    help=argparse.SUPPRESS)
+                    help=argparse.SUPPRESS)
 args = parser.parse_args()
 debug = 0
 
@@ -195,7 +195,7 @@ netns_filter = ""
 # code substitutions
 if args.pid:
     bpf_text = bpf_text.replace('##FILTER_PID##',
-        'if (pid != %s) { return 0; }' % args.pid)
+                                'if (pid != %s) { return 0; }' % args.pid)
 else:
     bpf_text = bpf_text.replace('##FILTER_PID##', '')
 if args.netns:
@@ -205,7 +205,7 @@ if args.port:
     lports = [int(lport) for lport in args.port.split(',')]
     lports_if = ' && '.join(['lport != %d' % lport for lport in lports])
     bpf_text = bpf_text.replace('##FILTER_PORT##',
-        'if (%s) { return 0; }' % lports_if)
+                                'if (%s) { return 0; }' % lports_if)
 if debug or args.ebpf:
     print(bpf_text)
     if args.ebpf:
@@ -214,6 +214,8 @@ if debug or args.ebpf:
 bpf_text = bpf_text.replace('##FILTER_PORT##', '')
 
 # process event
+
+
 def print_ipv4_event(cpu, data, size):
     event = b["ipv4_events"].event(data)
     global start_ts
@@ -225,13 +227,17 @@ def print_ipv4_event(cpu, data, size):
         printb(b"%-9.3f" % ((float(event.ts_us) - start_ts) / 1000000), nl="")
     if args.netns:
         print("%-16d" % event.netns, end="")
-    
+
     printb(b"%-7d %-12.12s %-2d %-16s %-5d %-16s %-10d" % (event.pid,
-        event.task, event.ip,
-        inet_ntop(AF_INET, pack("I", event.daddr)).encode(),
-        event.dport,
-        inet_ntop(AF_INET, pack("I", event.saddr)).encode(),
-        event.lport))
+                                                           event.task, event.ip,
+                                                           inet_ntop(AF_INET, pack(
+                                                               "I", event.daddr)).encode(),
+                                                           event.dport,
+                                                           inet_ntop(AF_INET, pack(
+                                                               "I", event.saddr)).encode(),
+                                                           event.lport))
+
+
 def print_ipv6_event(cpu, data, size):
     event = b["ipv6_events"].event(data)
     global start_ts
@@ -245,12 +251,14 @@ def print_ipv6_event(cpu, data, size):
         print("%-16d" % event.netns, end="")
 
     printb(b"%-7d %-12.12s %-2d %-16s %-5d %-16s %-10d" % (event.pid,
-        event.task, event.ip,
-        inet_ntop(AF_INET6, event.daddr).encode(),
-        event.dport,
-        inet_ntop(AF_INET6, event.saddr).encode(),
-        event.lport))
- 
+                                                           event.task, event.ip,
+                                                           inet_ntop(
+                                                               AF_INET6, event.daddr).encode(),
+                                                           event.dport,
+                                                           inet_ntop(
+                                                               AF_INET6, event.saddr).encode(),
+                                                           event.lport))
+
 
 # initialize BPF
 b = BPF(text=bpf_text)
@@ -266,7 +274,7 @@ if args.netns:
     print("%-16s" % ("NETNS"), end="")
 
 print("%-7s %-12s %-2s %-16s %-5s %-16s %-10s" % ("PID", "COMM", "IP", "RADDR",
-    "RPORT", "LADDR", "LPORT"))
+                                                  "RPORT", "LADDR", "LPORT"))
 
 
 start_ts = 0
