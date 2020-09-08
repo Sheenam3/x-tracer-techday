@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # @lint-avoid-python-3-compatibility-imports
 #
 # execsnoop Trace new processes via exec() syscalls.
