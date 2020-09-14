@@ -200,6 +200,7 @@ func RunTcplife(tool string, logtcplife chan Log, pid string) {
 			}*/
 			timest := 0.00
 
+
 			n := Log{Fulllog: string(line), Pid: parsedLine[2], Time: timest, Probe: tool}
 			logtcplife <- n
 /*			if num > 5000 {
@@ -227,7 +228,7 @@ func RunExecsnoop(tool string, logexecsnoop chan Log, pid string) {
 
 	for {
 		line, _, _ := buf.ReadLine()
-		parsedLine := strings.Fields(string(line))
+	//	parsedLine := strings.Fields(string(line))
 
 		//if parsedLine[0] == "TIME(s)" {
 /*		ppid, err := strconv.ParseInt(parsedLine[4], 10, 64)
@@ -240,7 +241,7 @@ func RunExecsnoop(tool string, logexecsnoop chan Log, pid string) {
 			}*/
 		timest := 0.00
 
-		n := Log{Fulllog: string(line), Pid: parsedLine[4], Time: timest, Probe: tool}
+		n := Log{Fulllog: string(line), Pid: "1234", Time: timest, Probe: tool}
 		logexecsnoop <- n
 /*			if num > 5000 {
 				close(logtcpaccept)
@@ -268,7 +269,7 @@ func RunBiosnoop(tool string, logbiosnoop chan Log, pid string) {
 
         for {
                 line, _, _ := buf.ReadLine()
-                parsedLine := strings.Fields(string(line))
+          //      parsedLine := strings.Fields(string(line))
 
 
 /*                ppid, err := strconv.ParseInt(parsedLine[3], 10, 64)
@@ -277,13 +278,13 @@ func RunBiosnoop(tool string, logbiosnoop chan Log, pid string) {
                 }*/
                 timest := 0.00
 
-                n := Log{Fulllog: string(line), Pid: parsedLine[3], Time: timest, Probe: tool}
+                n := Log{Fulllog: string(line), Pid: "1234", Time: timest, Probe: tool}
                 logbiosnoop <- n
 
 	}
 }	
 
-
+/*
 func RunCachetop(tool string, logcachetop chan Log, pid string) {
 
         sep := GetNS(pid)
@@ -306,13 +307,13 @@ func RunCachetop(tool string, logcachetop chan Log, pid string) {
                 if err != nil {
                      println("Cachetop PID Error")
                 }*/
-                timest := 0.00
+/*                timest := 0.00
 
                 n := Log{Fulllog: string(line), Pid: parsedLine[1], Time: timest, Probe: tool}
                 logcachetop <- n
 
         }
-}       
+} */      
 
 
 
