@@ -73,7 +73,7 @@ interval = int(args.interval)
 # define BPF program
 bpf_text = """
 #include <uapi/linux/ptrace.h>
-#include <linux/ns_common.h>
+
 #include <linux/nsproxy.h>
 #include <linux/sched.h>
 #include <net/net_namespace.h>

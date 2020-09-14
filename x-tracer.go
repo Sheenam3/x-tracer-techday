@@ -45,7 +45,7 @@ func main() {
         fmt.Println("Container Id is:", containers[con].ID)
 
         //Tools/ Probes
-        pn := []string {"tcptracer", "tcpconnect", "tcpaccept", "tcplife", "execsnoop", "biosnoop", "All Probes"}
+        pn := []string {"tcptracer", "tcpconnect", "tcpaccept", "tcplife", "execsnoop", "biosnoop", "cachestat" ,"All Probes"}
 
         topResult, err := cli.ContainerTop(context.Background(), containers[con].ID, []string{"o","pid"})
         if err != nil {
@@ -154,7 +154,7 @@ func main() {
                                 }
 
                         }()
-	/*
+	
         case "cachestat":
                 logcachetop := make(chan pp.Log, 1)
                         go pp.RunCachetop(pn[probe], logcachetop, topResult.Processes[0][0])
@@ -166,7 +166,7 @@ func main() {
 
                                 }
 
-                        }()*/
+                        }()
 
 
 
@@ -252,7 +252,7 @@ func main() {
                                 }
 
                         }()
-/*
+
                 logcachetop := make(chan pp.Log, 1)
                         go pp.RunCachetop(pn[probe], logcachetop, topResult.Processes[0][0])
                         go func() {
@@ -263,7 +263,7 @@ func main() {
 
                                 }
 
-                        }()*/
+                        }()
 
 
         }
