@@ -2,19 +2,22 @@
 package main
 
 import (
-        "context"
+/*        "context"
         "fmt"
         "strings"
         "github.com/docker/docker/api/types"
-        "github.com/docker/docker/client"
-
-        pp "github.com/Sheenam3/x-tracer-techday/parse"
-        "time"
+        "github.com/docker/docker/client"*/
+	"github.com/Sheenam3/x-tracer-techday/ui"
+        //pp "github.com/Sheenam3/x-tracer-techday/parse"
+        //"time"
 
 )
 
 func main() {
-        ctx := context.Background()
+
+
+	ui.InitGui()
+/*        ctx := context.Background()
         cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
         if err != nil {
                 panic(err)
@@ -72,7 +75,7 @@ func main() {
 
 
         fmt.Println("The Probe you chose is:", pn[probe])
-
+	
 
         switch pn[probe] {
 
@@ -82,7 +85,8 @@ func main() {
                         go func() {
 
                                 for val := range logtcptracer {
-                                        parse := strings.Fields(string(val.Fulllog))
+                                        parse := strings.Fields(val.Fulllog)
+					fmt.Println("here->",parse)
                                         fmt.Printf("{Sys_Time: %s |T: %s | PID:%s | PNAME:%s |IP->%s | SADDR:%s | DADDR:%s | SPORT:%s | DPORT:%s \n",parse[0],parse[1],parse[3],parse[4],parse[5],parse[6],parse[7],parse[8],parse[9])
 
 
@@ -96,7 +100,9 @@ func main() {
                         go func() {
 
                                 for val := range logtcpconnect {
-                                        parse := strings.Fields(string(val.Fulllog))
+                                        parse := strings.Fields(val.Fulllog)
+					fmt.Println("here->",parse)
+
                                         fmt.Printf("{Sys_Time: %s |T: %s | PID:%s | PNAME:%s | IP:%s | SADDR:%s | DADDR:%s | DPORT:%s \n",parse[0],parse[1],parse[3],parse[4],parse[5],parse[6],parse[7],parse[8])
                                 }
 
@@ -109,7 +115,8 @@ func main() {
                         go func() {
 
                                 for val := range logtcpaccept {
-                                        parse := strings.Fields(string(val.Fulllog))
+                                        parse := strings.Fields(val.Fulllog)
+					fmt.Println("here->",parse)
                                         fmt.Printf("{Sys_Time: %s |T: %s | PID:%s | PNAME:%s | IP:%s | RADDR:%s | RPORT:%s | LADDR:%s | LPORT:%s \n",parse[0],parse[1],parse[3],parse[4],parse[5],parse[6],parse[7],parse[8],parse[9])
 
 
@@ -280,4 +287,6 @@ for {
 
 
 
+
+*/
 }
