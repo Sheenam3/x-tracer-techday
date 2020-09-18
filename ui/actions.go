@@ -133,10 +133,10 @@ func actionViewProbesSelect(g *gocui.Gui, v *gocui.View) error {
 	        fmt.Fprintln(tv,  "s")
 
 	}else{
-		id := "0"
-	        G,p,lv,id := showViewConLogs(g)
+		
+	        G,p,lv := showViewConLogs(g)
 		displayConfirmation(g, line+" probe selected")
-		startAgent(G,p,lv,line,id)
+		startAgent(G,p,lv,line)
 		G.SetViewOnTop("logs")
 		G.SetCurrentView("logs")
 	}

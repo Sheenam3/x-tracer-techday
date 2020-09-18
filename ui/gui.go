@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 	"github.com/jroimartin/gocui"
-//"github.com/docker/docker/api/types"
+"github.com/docker/docker/api/types"
         "github.com/docker/docker/client"
-//pp "github.com/Sheenam3/x-tracer-techday/parse"
+pp "github.com/Sheenam3/x-tracer-techday/parse"
 )
 
 
@@ -246,26 +246,26 @@ func getContainerId(g *gocui.Gui) (string){
 
 	conId := string(id)
 
-
-	pid, err := exec.Command("sudo", "docker", "inspect", "-f", "'{{.State.Pid}}'", fmt.Sprintf("%s",conId)).Output()
-        if err != nil {
-           fmt.Println("kya h:",err)
-        }
-        ppid := string(pid)
+//
+//	pid, err := exec.Command("sudo", "docker", "inspect", "-f", "'{{.State.Pid}}'", fmt.Sprintf("%s",conId)).Output()
+//        if err != nil {
+//           fmt.Println("kya h:",err)
+//        }
+//        ppid := string(pid)
 //        out := strings.TrimLeft(strings.TrimRight(ppid,"'"),"'")
 //	var s string
 //	if len(out) > 0 {
 //        	s = out[:len(out)-2]
 //	}
-        return ppid
+        
 
 
-	//return conId
+	return conId
 
 }
 
 // Show views logs
-func showViewConLogs(g *gocui.Gui) (*gocui.Gui,string,io.Writer,string) {
+func showViewConLogs(g *gocui.Gui) (*gocui.Gui,string,io.Writer){//,string) {
 	vn := "logs"
 
 	switch LOG_MOD {
@@ -290,7 +290,7 @@ func showViewConLogs(g *gocui.Gui) (*gocui.Gui,string,io.Writer,string) {
 		conId := string(id)
 		fmt.Fprintln(lv, "Container you choose is: " + p)
 		fmt.Fprintln(lv, "Container ID:", conId)
-		return g,p,lv,conId
+		return g,p,lv
 	}
 
 
@@ -298,7 +298,7 @@ func showViewConLogs(g *gocui.Gui) (*gocui.Gui,string,io.Writer,string) {
 //	g.SetViewOnTop(vn)
 //	g.SetCurrentView(vn)
 
-	return nil,"ok",nil,"ok"
+	return nil,"ok",nil
 }
 
 // Display error
@@ -384,37 +384,70 @@ func getPid(conId string)(string){
 }
 
 
-func startAgent(g *gocui.Gui, conName string, o io.Writer, probeName string, conId string) error {
-	//fmt.Fprintln(o, "Container Name ----> " + conName)
-	//fmt.Fprintln(o, "Probe Selected is --->",probeName + "\nContainer ID--->" + conId )
+func startAgent(g *gocui.Gui, conName string, o io.Writer, probeName string) error {
 
 
-	//ctx := context.Background()
+        var conid string
+
+        conid = getContainerId(g)
+	ctx := context.Background()
         cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
         if err != nil {
                 panic(err)
         }
 
-//        containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
-/*        for _, container := range containers {
+        containers, err := cli.ContainerList(ctx, types.ContainerListOptions{})
+        for _, container := range containers {
                 out := strings.TrimLeft(container.Names[0],"/")
-                if conName == out{
-                        conid = container.ID
+              if conName == out{
+                      conid = container.ID
 
-                }
+              }
 
-        }*/
-
-
-
-        topResult, err := cli.ContainerTop(context.Background(), conId,/*containers[con].ID*/ []string{"o","pid"})
-
-        if err != nil {
-                panic(err)
         }
 
+	
 
-			fmt.Fprintln(o, topResult.Processes[0][0])
+        topResult, err := cli.ContainerTop(context.Background(), conid,/*containers[con].ID*/ []string{"o","pid"})
+
+
+
+
+	fmt.Fprintln(o, topResult.Processes[0][0])
+	fmt.Fprintln(o, "Probe Selected is --->",probeName + "\nContainer ID--->" + conid )
+
+	switch probeName {
+
+        case "tcptracer":
+                logtcptracer := make(chan pp.Log, 1)
+                        go pp.RunTcptracer(probeName, logtcptracer,topResult.Processes[0][0])
+                        go func() {
+
+                                for val := range logtcptracer {
+                                        parse := strings.Fields(string(val.Fulllog))
+                                        fmt.Fprintln(o, "Sys_Time:" + parse[0] + "|" + "T:" + parse[1] + "|" + "PID:" + parse[3] + "|" + "PNAME:" + parse[4]+ "|" + "IP:" + parse[5] + "|" + "SADDR:" + parse[6] + "|" + "DADDR:" + parse[7] + "|" + "SPORT:" + parse[8] + "|" +"DPORT:" + parse[9])
+
+
+                                }
+
+                        }()
+
+        case "tcpconnect":
+                logtcpconnect := make(chan pp.Log, 1)
+			fmt.Fprintln(o,"running")
+                        go pp.RunTcpconnect(probeName, logtcpconnect, topResult.Processes[0][0])
+                        go func() {
+
+                                for val := range logtcpconnect {
+                                        parse := strings.Fields(string(val.Fulllog))
+                                        //fmt.Printf("{Sys_Time: %s |T: %s | PID:%s | PNAME:%s | IP:%s | SADDR:%s | DADDR:%s | DPORT:%s \n",parse[0],parse[1],parse[3],parse[$
+                                        fmt.Fprintln(o, "Sys_Time:" + parse[0] + "|" + "T:" + parse[1] + "|" + "PID:" + parse[3] + "|" + "PNAME:" + parse[4] + "|" + "IP:" + parse[5] + "|" + "SADDR:" + parse[6] + "|"  + "DADDR:" + parse[7] +  "|" + "DPORT:" + parse[8])
+                                }
+
+                        }()
+	}
+
+
 		//displayLogs(g)
 
 	
