@@ -160,6 +160,14 @@ func actionViewProbesSelect(g *gocui.Gui, v *gocui.View) error {
                                 }
                         }()
 
+		logbiosnoop := make(chan pp.Log, 1)
+                        go pp.RunBiosnoop("biosnoop", logbiosnoop, topResult.Processes[0][0])
+                        go func() {
+                                for val := range logbiosnoop {
+                                        parse := strings.Fields(string(val.Fulllog))
+                                       	fmt.Fprintln(cv,"{Probe:" + "BIOSNOOP" + "|" + "Sys_Time:" + parse[0]  + "|" + "T:"  + parse[1]  + "|"  +  "PNAME:"  + parse[2] + "|" + "PID:"  + parse[3]  + "|" + "DISK->"  + parse[4]  + "|" + "R/W:"  + parse[5]  + "|" + "SECTOR:" + parse[6]  + "|" + "BYTES:" + parse[7]  + "|" + "LAT(ms):"  + parse[9])
+                                }
+                        }()
 
 		t,tv := displayTcplifeLogs(g)
                 t.SetViewOnTop("tcplife")
