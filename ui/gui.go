@@ -413,37 +413,79 @@ func startAgent(g *gocui.Gui, conName string, o io.Writer, probeName string) err
 
 
 
-	fmt.Fprintln(o, topResult.Processes[0][0])
-	fmt.Fprintln(o, "Probe Selected is --->",probeName + "\nContainer ID--->" + conid )
+//	fmt.Fprintln(o, topResult.Processes[0][0])
+	fmt.Fprintln(o, "Probe Selected is --->",probeName + "\n" + probeName + " logs will be streamed shortly..." )
 
 	switch probeName {
 
         case "tcptracer":
-                logtcptracer := make(chan pp.Log, 1)
-                        go pp.RunTcptracer(probeName, logtcptracer,topResult.Processes[0][0])
-                        go func() {
-
-                                for val := range logtcptracer {
-                                        parse := strings.Fields(string(val.Fulllog))
-                                        fmt.Fprintln(o, "Sys_Time:" + parse[0] + "|" + "T:" + parse[1] + "|" + "PID:" + parse[3] + "|" + "PNAME:" + parse[4]+ "|" + "IP:" + parse[5] + "|" + "SADDR:" + parse[6] + "|" + "DADDR:" + parse[7] + "|" + "SPORT:" + parse[8] + "|" +"DPORT:" + parse[9])
-
-
+		logtcptracer := make(chan pp.Log, 1)
+                go pp.RunTcptracer("tcptracer", logtcptracer, topResult.Processes[0][0])
+                go func() {
+                           for val := range logtcptracer {
+                                  parse := strings.Fields(string(val.Fulllog))
+                                  fmt.Fprintln(o,"{Probe:" + "TCPTRACER" + "|" + "Sys_Time:" + parse[0]  + "|" + "T:" + parse[1]  + "|" + "PID:"  + parse[3]  + "|" + " PNAME:"  + parse[4]  + "|" + "IP->"  + parse[5]  + "|" + "SADDR:"  + parse[6]  + "|" + "DADDR:" + parse[7]  + "|" + "SPORT:" + parse[8]  + "|" + "DPORT:"  + parse[9])
                                 }
-
                         }()
-
         case "tcpconnect":
                 logtcpconnect := make(chan pp.Log, 1)
-			fmt.Fprintln(o,"running")
-                        go pp.RunTcpconnect(probeName, logtcpconnect, topResult.Processes[0][0])
+                        go pp.RunTcpconnect("tcpconnect", logtcpconnect, topResult.Processes[0][0])
                         go func() {
-
                                 for val := range logtcpconnect {
                                         parse := strings.Fields(string(val.Fulllog))
-                                        //fmt.Printf("{Sys_Time: %s |T: %s | PID:%s | PNAME:%s | IP:%s | SADDR:%s | DADDR:%s | DPORT:%s \n",parse[0],parse[1],parse[3],parse[$
-                                        fmt.Fprintln(o, "Sys_Time:" + parse[0] + "|" + "T:" + parse[1] + "|" + "PID:" + parse[3] + "|" + "PNAME:" + parse[4] + "|" + "IP:" + parse[5] + "|" + "SADDR:" + parse[6] + "|"  + "DADDR:" + parse[7] +  "|" + "DPORT:" + parse[8])
+			fmt.Fprintln(o,"{Probe:" + "TCPCONNECT" + "|" + "Sys_Time:" + parse[0]  + "|" + "T:" + parse[1]  + "|" + "PID:"  + parse[3]  + "|" + " PNAME:"  + parse[4]  + "|" + "IP->"  + parse[5]  + "|" + "SADDR:" + parse[6]  + "|" + "DADDR:" + parse[7]  + "|" + "DPORT:"  + parse[8])
                                 }
+                        }()
 
+	case "tcpaccept":
+		logtcpaccept := make(chan pp.Log, 1)
+                        go pp.RunTcpaccept("tcpaccept", logtcpaccept, topResult.Processes[0][0])
+                        go func() {
+                                for val := range logtcpaccept {
+                                        parse := strings.Fields(string(val.Fulllog))
+                                  fmt.Fprintln(o,"{Probe:" + "TCPACCEPT" + "|" + "Sys_Time:" + parse[0]  + "|" + "T:" + parse[1]  + "|" + "PID:"  + parse[3]  + "|" + " PNAME:"  + parse[4]  + "|" + "IP->"  + parse[5]  + "|" + "RADDR:"  + parse[6]  + "|" + "RPORT:" + parse[7]  + "|" + "LADDR:" + parse[8]  + "|" + "LPORT:"  + parse[9])
+                                }
+                        }()
+
+	case "tcplife":
+		logtcplife := make(chan pp.Log, 1)
+                        go pp.RunTcplife("tcplife", logtcplife, topResult.Processes[0][0])
+                        go func() {
+                                for val := range logtcplife {
+                                        parse := strings.Fields(string(val.Fulllog))
+					fmt.Fprintln(o,"{Probe:" + "TCPLIFE" + "|" + "Sys_Time:" + parse[0]  + "|" + "PID:"  + parse[2]  + "|" + "PNAME:"  + parse[3]  + "|" + "LADDR"  + parse[4]  + "|" + "LPORT:"  + parse[5]  + "|" + "RADDR:" + parse[6]  + "|" + "RPORT:" + parse[7]  + "|" + "TX_KB"  + parse[8]  +  "RX_KB:"  + parse[9] + "|" + "MS:" + parse[10])
+                                }
+                        }()
+
+
+	case "execsnoop":
+		logexecsnoop := make(chan pp.Log, 1)
+                        go pp.RunExecsnoop("execsnoop", logexecsnoop, topResult.Processes[0][0])
+                        go func() {
+                                for val := range logexecsnoop {
+                                        parse := strings.Fields(string(val.Fulllog))
+			fmt.Fprintln(o,"Sys_Time:" + parse[0]  + "|" + "T:" + parse[1]  + "|" + "PID:"  + parse[4]  + "|" + " PNAME:"  + parse[3]  + "|" + "PPID->"  + parse[5]  + "|" + "RET:" + parse[6]  + "|" + "ARGS:" + parse[7])
+                                }
+                        }()
+
+	case "cachestat":
+		logcachetop := make(chan pp.Log, 1)
+                        go pp.RunCachetop("cachestat", logcachetop, topResult.Processes[0][0])
+                        go func() {
+                                for val := range logcachetop {
+                                        parse := strings.Fields(string(val.Fulllog))
+					fmt.Fprintln(o,"{Probe:" + "CACHESTAT" + "|" + "Sys_Time:" + parse[0]  + "|" + "PID:"  + parse[1]  + "|" + "UID:"  + parse[2]  + "|" + "CMD->"  + parse[3]  + "|" + "HITS:"  + parse[5]  + "|" + "MISS:" + parse[6]  + "|" + "DIRTIES:" + parse[7]  + "|" + "READ_HIT%:"  + parse[8]  +  "W_HIT%:"  + parse[9])
+                                }
+                        }()
+
+	case "biosnoop":
+		logbiosnoop := make(chan pp.Log, 1)
+                        go pp.RunBiosnoop("biosnoop", logbiosnoop, topResult.Processes[0][0])
+                        go func() {
+                                for val := range logbiosnoop {
+                                        parse := strings.Fields(string(val.Fulllog))
+                                       	fmt.Fprintln(o,"{Probe:" + "BIOSNOOP" + "|" + "Sys_Time:" + parse[0]  + "|" + "T:"  + parse[1]  + "|"  +  "PNAME:"  + parse[2] + "|" + "PID:"  + parse[3]  + "|" + "DISK->"  + parse[4]  + "|" + "R/W:"  + parse[5]  + "|" + "SECTOR:" + parse[6]  + "|" + "BYTES:" + parse[7]  + "|" + "LAT(ms):"  + parse[9])
+                                }
                         }()
 	}
 
